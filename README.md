@@ -7,8 +7,9 @@ This is a simple __S__-__E__xpression-based __Language__.
 The grammar of this language is specified using EBNF below:
 
 ```plain
-nonzero-digit ::= "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
-digit ::= nonzero digit | "0" ;
+whitespace ::= { " " } ;
+
+digit ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
 
 letter ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
          | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
@@ -16,19 +17,19 @@ letter ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
          | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V"
          | "W" | "X" | "Y" | "Z" ;
 
-number ::= [ "-" ] nonzero-digit { digit } ;
+number ::= [ "-" ] digit { digit };
 
-character ::= { letter | number | "\'" | "\"" }
+character ::= { letter | digit | "\'" | "\"" } ;
 
 boolean ::= "true" | "false"
 
-string ::= '"' { character } '"' ;
+string ::= '"' { character | whitespace } '"' ;
 
 identifier ::= letter { letter | digit } ;
 
 atom := identifier | string | number | boolean | term
 
-list := "(" [ "atom" { " " atom } ] ")"
+list := "(" [ atom { " " atom } ] ")"
 
 term := atom | list
 ```
