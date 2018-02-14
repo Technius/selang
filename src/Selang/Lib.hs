@@ -1,6 +1,6 @@
 module Selang.Lib
     ( parser
-    , Expr
+    , Term
     ) where
 
 import Data.Char
@@ -9,14 +9,14 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
-someFunc :: IO ()
-someFunc = putStrLn "Hello world!"
+data Value = NumVal Int
+           | BoolVal Bool
+           | StringVal String
+           deriving (Show, Eq)
 
-data Expr = NumLit Int
-          | BoolLit Bool
-          | StringLit String
+data Term = Val Value
           | Ident String
-          | ListExpr [Expr]
+          | Lst [Term]
           deriving (Show, Eq)
 
 type ParserT m = ParsecT Void String m
@@ -32,7 +32,7 @@ symbol = L.symbol whitespace
 digit :: ParserT m Char
 digit = digitChar
 
-number :: ParserT m Expr
+number :: ParserT m Value
 number = do
   neg <- optional (symbol "-")
   lead <- digit
@@ -40,7 +40,7 @@ number = do
   let sign = case neg of
         Just _ -> -1
         Nothing -> 1
-  pure $ NumLit (sign * read (lead : rest))
+  pure $ NumVal (sign * read (lead : rest))
 
 letter :: ParserT m Char
 letter = letterChar
@@ -48,30 +48,30 @@ letter = letterChar
 character :: ParserT m Char
 character = letter <|> digit <|> (char '\\' >> char '\'') <|> (char '\\' >> char '\"')
 
-string :: ParserT m Expr
-string = StringLit <$> between (char '"') (char '"') (many (character <|> char ' '))
+string :: ParserT m Value
+string = StringVal <$> between (char '"') (char '"') (many (character <|> char ' '))
 
-boolean :: ParserT m Expr
-boolean = (const (BoolLit True) <$> symbol "true") <|>
-          (const (BoolLit False) <$> symbol "false")
+boolean :: ParserT m Value
+boolean = (const (BoolVal True) <$> symbol "true") <|>
+          (const (BoolVal False) <$> symbol "false")
 
-literal :: ParserT m Expr
-literal = Selang.Lib.string <|> number <|> boolean <?> "literal"
+literal :: ParserT m Term
+literal = Val <$> (Selang.Lib.string <|> number <|> boolean <?> "literal")
 
-identifier :: ParserT m Expr
+identifier :: ParserT m Term
 identifier = do
   h <- letter
   t <- many (letter <|> digit)
   pure (Ident (h:t))
 
-atom :: ParserT m Expr
+atom :: ParserT m Term
 atom = identifier <|> literal <?> "atom"
 
-list :: ParserT m Expr
-list = between (char '(') (char ')') (ListExpr <$> term `sepBy1` whitespace)
+list :: ParserT m Term
+list = between (char '(') (char ')') (Lst <$> term `sepBy1` whitespace)
 
-term :: ParserT m Expr
+term :: ParserT m Term
 term = atom <|> list <?> "term"
 
-parser :: ParserT m Expr
+parser :: ParserT m Term
 parser = term

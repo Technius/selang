@@ -4,7 +4,7 @@ This is a simple __S__-__E__xpression-based __Language__.
 
 ## Grammar
 
-The grammar of this language is specified using EBNF below:
+The concrete grammar of this language is specified using EBNF below:
 
 ```plain
 whitespace ::= { " " } ;
