@@ -1,6 +1,5 @@
 module Selang.Lib
     ( parser
-    , Term
     ) where
 
 import Data.Char
@@ -8,16 +7,7 @@ import Data.Void
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-
-data Value = NumVal Int
-           | BoolVal Bool
-           | StringVal String
-           deriving (Show, Eq)
-
-data Term = Val Value
-          | Ident String
-          | Lst [Term]
-          deriving (Show, Eq)
+import Selang.Ast
 
 type ParserT m = ParsecT Void String m
 
@@ -37,10 +27,8 @@ number = do
   neg <- optional (symbol "-")
   lead <- digit
   rest <- many digitChar
-  let sign = case neg of
-        Just _ -> -1
-        Nothing -> 1
-  pure $ NumVal (sign * read (lead : rest))
+  let sign = maybe (1 :: Int) (const (-1 :: Int)) neg
+  pure $ toAst (sign * read (lead : rest))
 
 letter :: ParserT m Char
 letter = letterChar
@@ -49,11 +37,11 @@ character :: ParserT m Char
 character = letter <|> digit <|> (char '\\' >> char '\'') <|> (char '\\' >> char '\"')
 
 string :: ParserT m Value
-string = StringVal <$> between (char '"') (char '"') (many (character <|> char ' '))
+string = toAst <$> between (char '"') (char '"') (many (character <|> char ' '))
 
 boolean :: ParserT m Value
-boolean = (const (BoolVal True) <$> symbol "true") <|>
-          (const (BoolVal False) <$> symbol "false")
+boolean = (const (toAst True) <$> symbol "true") <|>
+          (const (toAst False) <$> symbol "false")
 
 literal :: ParserT m Term
 literal = Val <$> (Selang.Lib.string <|> number <|> boolean <?> "literal")
