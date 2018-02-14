@@ -4,7 +4,7 @@ import Data.List (intercalate)
 import System.Environment (getArgs)
 import Text.Megaparsec (runParserT)
 
-import Selang.Lib
+import Selang.Parser
 
 main :: IO ()
 main = do

@@ -1,4 +1,4 @@
-module Selang.Lib
+module Selang.Parser
     ( parser
     ) where
 
@@ -44,7 +44,7 @@ boolean = (const (toAst True) <$> symbol "true") <|>
           (const (toAst False) <$> symbol "false")
 
 literal :: ParserT m Term
-literal = lexeme $ Val <$> (Selang.Lib.string <|> number <|> boolean <?> "literal")
+literal = lexeme $ Val <$> (Selang.Parser.string <|> number <|> boolean <?> "literal")
 
 identifier :: ParserT m Term
 identifier = do
