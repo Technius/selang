@@ -33,7 +33,9 @@ atom := identifier | literal ;
 
 list := "(" [ term { " " term } ] ")" ;
 
-term := atom | list ;
+conditional := "if" term "then" term "else" term ;
+
+term := atom | list | conditional ;
 ```
 
 ## Evaluation rules

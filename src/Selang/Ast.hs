@@ -17,6 +17,7 @@ data Value = NumVal Int
 
 data Term = Val Value
           | Ident String
+          | Cond Term Term Term
           | Lst [Term]
           deriving (Eq)
 
@@ -29,6 +30,7 @@ instance Show Term where
   show (Val v) = show v
   show (Ident s) = s
   show (Lst ts) = "[" ++ intercalate ", " (fmap show ts) ++ "]"
+  show (Cond cond t f) = "if " ++ show cond ++ " then " ++ show t ++ " else " ++ show f
 
 class ToAst a b where
   toAst :: a -> b

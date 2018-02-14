@@ -44,13 +44,13 @@ boolean = (const (toAst True) <$> symbol "true") <|>
           (const (toAst False) <$> symbol "false")
 
 literal :: ParserT m Term
-literal = Val <$> (Selang.Lib.string <|> number <|> boolean <?> "literal")
+literal = lexeme $ Val <$> (Selang.Lib.string <|> number <|> boolean <?> "literal")
 
 identifier :: ParserT m Term
 identifier = do
   h <- letter
   t <- many (letter <|> digit)
-  pure (Ident (h:t))
+  lexeme (pure (Ident (h:t)))
 
 atom :: ParserT m Term
 atom = identifier <|> literal <?> "atom"
@@ -58,8 +58,18 @@ atom = identifier <|> literal <?> "atom"
 list :: ParserT m Term
 list = between (char '(') (char ')') (Lst <$> term `sepBy1` whitespace)
 
+conditional :: ParserT m Term
+conditional = do
+  symbol "if"
+  cond <- term
+  symbol "then"
+  t <- term
+  symbol "else"
+  f <- term
+  pure (Cond cond t f)
+
 term :: ParserT m Term
-term = atom <|> list <?> "term"
+term = (try conditional) <|> atom <|> list <?> "term"
 
 parser :: ParserT m Term
 parser = term
