@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Selang.Ast
-  ( Value
+  ( Value (..)
   , Term (..)
   , ToAst (toAst)
   ) where

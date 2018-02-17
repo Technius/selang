@@ -21,8 +21,8 @@ description:         Please see the README on Github at <https://github.com/Tech
 
 dependencies:
 - base >= 4.7 && < 5
-- parsec
 - megaparsec
+- transformers
 
 library:
   source-dirs: src

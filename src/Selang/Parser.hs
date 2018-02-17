@@ -53,7 +53,7 @@ identifier = do
   lexeme (pure (Ident (h:t)))
 
 atom :: ParserT m Term
-atom = identifier <|> literal <?> "atom"
+atom = literal <|> identifier <?> "atom"
 
 list :: ParserT m Term
 list = between (char '(') (char ')') (Lst <$> term `sepBy1` whitespace)
