@@ -23,6 +23,20 @@ type Env = Map String Term
 defaultEnv :: Env
 defaultEnv = Map.fromList [("hello", Val $ toAst "Hello world!")]
 
+defineHostFn :: (FromAst a) => String -> (a -> Term) -> (String, Term -> Either EvalError Term)
+defineHostFn name f = (name, wrapper)
+  where wrapper (Val t) =
+          case fromAst t of
+            Just a -> Right (f a)
+            Nothing -> Left TypeMismatch
+        wrapper _ = Left TypeMismatch
+
+hostFunctions :: Map String (Term -> Either EvalError Term)
+hostFunctions = Map.fromList
+  [ defineHostFn "plus1" (Val . NumVal . (+1))
+  , defineHostFn "quote" (Val . StringVal . (show :: String -> String))
+  ]
+
 eval :: (Monad m) => Term -> EvalResult m
 eval (Cond cond t f) = do
   cond' <- eval cond
@@ -35,4 +49,8 @@ eval (Ident name) = do
   case Map.lookup name env of
     Just v -> pure v
     _ -> throwE (UnknownIdent name)
+eval (Lst [Ident name, arg]) = do
+  case Map.lookup name hostFunctions of
+    Just f -> ExceptT (pure (f arg))
+    Nothing -> throwE (UnknownIdent name)
 eval x = pure x
