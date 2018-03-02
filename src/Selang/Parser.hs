@@ -56,7 +56,7 @@ atom :: ParserT m Term
 atom = literal <|> identifier <?> "atom"
 
 list :: ParserT m Term
-list = lexeme $ between (char '(') (char ')') (Lst <$> term `sepBy1` whitespace)
+list = lexeme $ between (char '[') (char ']') (Lst <$> term `sepBy` (symbol ","))
 
 conditional :: ParserT m Term
 conditional = do

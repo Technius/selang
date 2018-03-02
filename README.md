@@ -19,7 +19,7 @@ letter ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l"
          | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V"
          | "W" | "X" | "Y" | "Z" ;
 
-character ::= { letter | digit | "\'" | '\"' } ;
+character ::= letter | digit | "\'" | '\"' ;
 
 string ::= '"' { character | whitespace } '"' ;
 
@@ -31,7 +31,7 @@ identifier ::= letter { letter | digit } ;
 
 atom := identifier | literal ;
 
-list := "(" [ term { " " term } ] ")" ;
+list := "[" [ term { "," term } ] "]" ;
 
 conditional := "if" term "then" term "else" term ;
 
