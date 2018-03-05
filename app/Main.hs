@@ -6,18 +6,22 @@ import Data.List (intercalate)
 import qualified Data.Map as Map
 import System.Environment (getArgs)
 import Text.Megaparsec (runParserT, ParseError)
+import Text.Megaparsec.Error
 
 import Selang.Ast (Term)
 import Selang.Parser
 import Selang.Eval
 import Selang.Typer
+import Selang.Errors
 
 main :: IO ()
 main = do
   args <- getArgs
-  (result, _) <- runStateT (runExceptT $ parseAndEval args) defaultEnv
+  let src = intercalate " " args
+  (result, _) <- runStateT (runExceptT $ parseAndEval src) defaultEnv
   case result of
-    Left err -> putStrLn err
+    Left (ErrParse err) -> putStrLn $ parseErrorPretty' src err
+    Left (ErrEval err) -> putStrLn (show err)
     Right expr -> do
       print expr
       let typ = getType (Map.empty) expr
@@ -25,8 +29,8 @@ main = do
         Just typ' -> putStrLn $ "Type: " ++ show typ'
         Nothing -> pure ()
 
-parseAndEval :: [String] -> ExceptT String (StateT Env IO) Term
-parseAndEval args = do
-  term <- (withExceptT show . ExceptT) $ runParserT parser "<console>" (intercalate " " args)
-  res <- withExceptT show (eval term)
+parseAndEval :: String -> ExceptT SeError (StateT Env IO) Term
+parseAndEval s = do
+  term <- (withExceptT ErrParse) . ExceptT $ runParserT parser "<console>" s
+  res <- withExceptT ErrEval $ (eval term)
   pure res

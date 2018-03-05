@@ -11,10 +11,7 @@ import Control.Monad.Trans.Except
 import Control.Monad.Trans.State
 import Data.Map as Map
 import Selang.Ast
-
-data EvalError = TypeMismatch
-               | UnknownIdent String
-               deriving (Show)
+import Selang.Errors
 
 type EvalResult m = ExceptT EvalError (StateT Env m) Term
 
