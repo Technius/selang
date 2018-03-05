@@ -5,6 +5,7 @@
 module Selang.Ast
   ( Value (..)
   , Term (..)
+  , Type (..)
   , ToAst (toAst)
   , FromAst (fromAst)
   ) where
@@ -23,6 +24,12 @@ data Term = Val Value
           | FnHost String
           deriving (Eq)
 
+data Type = TyInt
+          | TyBool
+          | TyString
+          | TyList
+          deriving (Eq)
+
 instance Show Value where
   show (NumVal x) = show x
   show (BoolVal x) = show x
@@ -34,6 +41,12 @@ instance Show Term where
   show (Lst ts) = "[" ++ intercalate ", " (fmap show ts) ++ "]"
   show (Cond cond t f) = "if " ++ show cond ++ " then " ++ show t ++ " else " ++ show f
   show (FnHost name) = "<host function " ++ name ++ ">"
+
+instance Show Type where
+  show TyInt = "Int"
+  show TyBool = "Bool"
+  show TyString = "String"
+  show TyList = "List"
 
 class ToAst a b where
   toAst :: a -> b
