@@ -24,6 +24,8 @@ dependencies:
 - megaparsec
 - transformers
 - containers
+- recursion-schemes
+- deriving-compat
 
 library:
   source-dirs: src
