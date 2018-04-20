@@ -5,14 +5,14 @@ module Selang.Parser
 import Data.Char
 import Data.Void
 import Text.Megaparsec
-import Text.Megaparsec.Char
+import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
 import Selang.Ast
 
 type ParserT m = ParsecT Void String m
 
 whitespace :: ParserT m ()
-whitespace = L.space space1 (L.skipLineComment ";;") empty
+whitespace = L.space C.space1 (L.skipLineComment ";;") empty
 
 lexeme = L.lexeme whitespace
 
@@ -20,24 +20,19 @@ symbol :: String -> ParserT m String
 symbol = L.symbol whitespace
 
 digit :: ParserT m Char
-digit = digitChar
+digit = C.digitChar
 
 number :: ParserT m Value
-number = do
-  neg <- optional (symbol "-")
-  lead <- digit
-  rest <- many digitChar
-  let sign = maybe (1 :: Int) (const (-1 :: Int)) neg
-  pure $ toAst (sign * read (lead : rest))
+number = toAst <$> (L.decimal :: ParserT m Int)
 
 letter :: ParserT m Char
-letter = letterChar
+letter = C.letterChar
 
 character :: ParserT m Char
-character = letter <|> digit <|> (char '\\' >> char '\'') <|> (char '\\' >> char '\"')
+character = letter <|> digit <|> (C.char '\\' >> C.char '\'') <|> (C.char '\\' >> C.char '\"')
 
 string :: ParserT m Value
-string = toAst <$> between (char '"') (char '"') (many (character <|> char ' '))
+string = toAst <$> between (C.char '"') (C.char '"') (many (character <|> C.char ' '))
 
 boolean :: ParserT m Value
 boolean = (const (toAst True) <$> symbol "true") <|>
@@ -56,7 +51,7 @@ atom :: ParserT m Term
 atom = literal <|> identifier <?> "atom"
 
 list :: ParserT m Term
-list = lexeme $ between (char '[') (char ']') (Lst <$> term `sepBy` (symbol ","))
+list = lexeme $ between (C.char '[') (C.char ']') (Lst <$> term `sepBy` (symbol ","))
 
 conditional :: ParserT m Term
 conditional = do
