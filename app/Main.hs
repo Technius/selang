@@ -31,11 +31,14 @@ main = do
         Just typ' -> putStrLn $ "Type: " ++ show typ'
         Nothing -> pure ()
 
+-- | Monad transformer stack used in the parse/evaluation pipeline
 type SeProgT a = ExceptT SeError (StateT Env IO) a
 
+-- | Runs the parse and evaluation pipeline on the given input
 runProgram :: String -> Env -> IO (Either SeError Term)
 runProgram src env = fst <$> (runStateT (runExceptT $ parseAndEval src) env)
 
+-- | Parses the given string and attempts to evaluate it
 parseAndEval :: String -> SeProgT Term
 parseAndEval s = do
   term <- liftEither $ first ErrParse (runParser parser "<console>" s)

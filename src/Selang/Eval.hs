@@ -1,4 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-|
+Provides functions to evaluate expression in the language.
+-}
 module Selang.Eval
   ( eval
   , defaultEnv
@@ -14,11 +17,14 @@ import Data.Map as Map
 import Selang.Ast
 import Selang.Errors
 
+-- | A mapping of variable names to terms
 type Env = Map String Term
 
+-- | The default environment
 defaultEnv :: Env
 defaultEnv = Map.fromList [("hello", Fix . Val $ toAst "Hello world!")]
 
+-- | Defines a function that can be called from the language
 defineHostFn :: (FromAst a) => String -> (a -> Term) -> (String, Term -> Either EvalError Term)
 defineHostFn name f = (name, wrapper)
   where wrapper (Fix (Val t)) =
@@ -27,12 +33,15 @@ defineHostFn name f = (name, wrapper)
             Nothing -> Left TypeMismatch
         wrapper _ = Left TypeMismatch
 
+-- | A list of host functions
 hostFunctions :: Map String (Term -> Either EvalError Term)
 hostFunctions = Map.fromList
   [ defineHostFn "plus1" (Fix . Val . NumVal . (+1))
   , defineHostFn "quote" (Fix . Val . StringVal . (show :: String -> String))
   ]
 
+-- | Evaluates the given `Term` in the given environment, possibly raising an
+-- error
 eval :: (MonadState Env m, MonadError EvalError m) => Term -> m Term
 eval (Fix (Cond cond t f)) = do
   cond' <- eval cond

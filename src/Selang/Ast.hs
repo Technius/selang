@@ -5,8 +5,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 {-|
-Tagged AST.
-
 Examples:
 @
   tagHi :: Term -> TTerm
@@ -48,6 +46,7 @@ import Data.Functor.Foldable
 import Data.Functor.Classes
 import Text.Show.Deriving
 
+-- | Constant values
 data Value = NumVal Int
            | BoolVal Bool
            | StringVal String
@@ -58,6 +57,7 @@ instance Show Value where
   show (BoolVal x) = show x
   show (StringVal x) = show x
 
+-- | Typeclass for converting arbitrary `a`s into AST nodes
 class ToAst a b where
   toAst :: a -> b
 
@@ -73,6 +73,7 @@ instance ToAst String Value where
 instance ToAst Bool Value where
   toAst = BoolVal
 
+-- | Typeclass for converting arbitrary AST values into Haskell values
 class FromAst a where
   fromAst :: Value -> Maybe a
 
@@ -88,6 +89,8 @@ instance FromAst Bool where
   fromAst (BoolVal x) = Just x
   fromAst _ = Nothing
 
+-- | The AST for the language, meant for use with Fix.
+-- | Note that `Term = Fix TermF`
 data TermF t = Val Value
              | Ident String
              | Cond t t t
@@ -106,11 +109,13 @@ instance (Show t) => Show (TermF t) where
 
 $(deriveShow1 ''TermF)
 
+-- | A sample AST in which each node is tagged with some message
 data Tagged f t = Tagged { tag :: String, content :: (f t) } deriving (Show, Functor)
 type TTerm = Fix (Tagged TermF)
 
 $(deriveShow1 ''Tagged)
 
+-- | Represents types of values in the language
 data Type = TyInt
           | TyBool
           | TyString
