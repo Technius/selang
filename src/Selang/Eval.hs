@@ -1,19 +1,17 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Selang.Eval
   ( eval
   , defaultEnv
   , Env
   , EvalError
-  , EvalResult
   ) where
 
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.State
+import Control.Monad.Trans (lift)
+import Control.Monad.Except
+import Control.Monad.State
 import Data.Map as Map
 import Selang.Ast
 import Selang.Errors
-
-type EvalResult m = ExceptT EvalError (StateT Env m) Term
 
 type Env = Map String Term
 
@@ -34,20 +32,20 @@ hostFunctions = Map.fromList
   , defineHostFn "quote" (Val . StringVal . (show :: String -> String))
   ]
 
-eval :: (Monad m) => Term -> EvalResult m
+eval :: (MonadState Env m, MonadError EvalError m) => Term -> m Term
 eval (Cond cond t f) = do
   cond' <- eval cond
   case cond' of
     Val (BoolVal x) ->
       pure $ if x then t else f
-    _ -> throwE TypeMismatch
+    _ -> throwError TypeMismatch
 eval (Ident name) = do
-  env <- lift get
+  env <- get
   case Map.lookup name env of
     Just v -> pure v
-    _ -> throwE (UnknownIdent name)
+    _ -> throwError (UnknownIdent name)
 eval (Lst [Ident name, arg]) = do
   case Map.lookup name hostFunctions of
-    Just f -> ExceptT (pure (f arg))
-    Nothing -> throwE (UnknownIdent name)
+    Just f -> liftEither (f arg)
+    Nothing -> throwError (UnknownIdent name)
 eval x = pure x

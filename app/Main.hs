@@ -1,11 +1,13 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Main where
 
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.State
+import Control.Monad.Except
+import Control.Monad.State
 import Data.List (intercalate)
+import Data.Bifunctor (first)
 import qualified Data.Map as Map
 import System.Environment (getArgs)
-import Text.Megaparsec (runParserT, ParseError)
+import Text.Megaparsec (runParser, ParseError)
 import Text.Megaparsec.Error
 
 import Selang.Ast (Term)
@@ -18,7 +20,7 @@ main :: IO ()
 main = do
   args <- getArgs
   let src = intercalate " " args
-  (result, _) <- runStateT (runExceptT $ parseAndEval src) defaultEnv
+  result <- runProgram src defaultEnv
   case result of
     Left (ErrParse err) -> putStrLn $ parseErrorPretty' src err
     Left (ErrEval err) -> putStrLn (show err)
@@ -29,8 +31,13 @@ main = do
         Just typ' -> putStrLn $ "Type: " ++ show typ'
         Nothing -> pure ()
 
-parseAndEval :: String -> ExceptT SeError (StateT Env IO) Term
+type SeProgT a = ExceptT SeError (StateT Env IO) a
+
+runProgram :: String -> Env -> IO (Either SeError Term)
+runProgram src env = fst <$> (runStateT (runExceptT $ parseAndEval src) env)
+
+parseAndEval :: String -> SeProgT Term
 parseAndEval s = do
-  term <- (withExceptT ErrParse) . ExceptT $ runParserT parser "<console>" s
-  res <- withExceptT ErrEval $ (eval term)
-  pure res
+  term <- liftEither $ first ErrParse (runParser parser "<console>" s)
+  result <- withExceptT ErrEval (eval term)
+  pure result
