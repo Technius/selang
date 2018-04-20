@@ -4,6 +4,7 @@ module Selang.Parser
 
 import Data.Char
 import Data.Void
+import Data.Functor.Foldable
 import Text.Megaparsec
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -39,19 +40,20 @@ boolean = (const (toAst True) <$> symbol "true") <|>
           (const (toAst False) <$> symbol "false")
 
 literal :: ParserT m Term
-literal = lexeme $ Val <$> (Selang.Parser.string <|> number <|> boolean <?> "literal")
+literal = lexeme $ Fix . Val <$> (Selang.Parser.string <|> number <|> boolean <?> "literal")
 
 identifier :: ParserT m Term
 identifier = do
   h <- letter
   t <- many (letter <|> digit)
-  lexeme (pure (Ident (h:t)))
+  lexeme (pure (Fix (Ident (h:t))))
 
 atom :: ParserT m Term
 atom = literal <|> identifier <?> "atom"
 
 list :: ParserT m Term
-list = lexeme $ between (C.char '[') (C.char ']') (Lst <$> term `sepBy` (symbol ","))
+list = lexeme (inBrackets (Fix . Lst <$> term `sepBy` (symbol ",")))
+  where inBrackets = between (C.char '[') (C.char ']')
 
 conditional :: ParserT m Term
 conditional = do
@@ -61,7 +63,7 @@ conditional = do
   t <- term
   symbol "else"
   f <- term
-  pure (Cond cond t f)
+  pure (Fix (Cond cond t f))
 
 term :: ParserT m Term
 term = (try conditional) <|> atom <|> list <?> "term"

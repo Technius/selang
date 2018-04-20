@@ -9,6 +9,7 @@ module Selang.Eval
 import Control.Monad.Trans (lift)
 import Control.Monad.Except
 import Control.Monad.State
+import Data.Functor.Foldable
 import Data.Map as Map
 import Selang.Ast
 import Selang.Errors
@@ -16,11 +17,11 @@ import Selang.Errors
 type Env = Map String Term
 
 defaultEnv :: Env
-defaultEnv = Map.fromList [("hello", Val $ toAst "Hello world!")]
+defaultEnv = Map.fromList [("hello", Fix . Val $ toAst "Hello world!")]
 
 defineHostFn :: (FromAst a) => String -> (a -> Term) -> (String, Term -> Either EvalError Term)
 defineHostFn name f = (name, wrapper)
-  where wrapper (Val t) =
+  where wrapper (Fix (Val t)) =
           case fromAst t of
             Just a -> Right (f a)
             Nothing -> Left TypeMismatch
@@ -28,23 +29,23 @@ defineHostFn name f = (name, wrapper)
 
 hostFunctions :: Map String (Term -> Either EvalError Term)
 hostFunctions = Map.fromList
-  [ defineHostFn "plus1" (Val . NumVal . (+1))
-  , defineHostFn "quote" (Val . StringVal . (show :: String -> String))
+  [ defineHostFn "plus1" (Fix . Val . NumVal . (+1))
+  , defineHostFn "quote" (Fix . Val . StringVal . (show :: String -> String))
   ]
 
 eval :: (MonadState Env m, MonadError EvalError m) => Term -> m Term
-eval (Cond cond t f) = do
+eval (Fix (Cond cond t f)) = do
   cond' <- eval cond
-  case cond' of
+  case unfix cond' of
     Val (BoolVal x) ->
       pure $ if x then t else f
     _ -> throwError TypeMismatch
-eval (Ident name) = do
+eval (Fix (Ident name)) = do
   env <- get
   case Map.lookup name env of
     Just v -> pure v
     _ -> throwError (UnknownIdent name)
-eval (Lst [Ident name, arg]) = do
+eval (Fix (Lst [Fix (Ident name), arg])) = do
   case Map.lookup name hostFunctions of
     Just f -> liftEither (f arg)
     Nothing -> throwError (UnknownIdent name)
