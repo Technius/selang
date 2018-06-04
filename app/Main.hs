@@ -5,6 +5,7 @@ import Control.Monad.Except
 import Control.Monad.State
 import Data.List (intercalate)
 import Data.Bifunctor (first)
+import Data.Text.Prettyprint.Doc (pretty)
 import qualified Data.Map as Map
 import System.Environment (getArgs)
 import Text.Megaparsec (runParser, ParseError)
@@ -25,7 +26,7 @@ main = do
     Left (ErrParse err) -> putStrLn $ parseErrorPretty' src err
     Left (ErrEval err) -> putStrLn (show err)
     Right expr -> do
-      print expr
+      print (pretty expr)
       let typ = getType (Map.empty) expr
       case typ of
         Just typ' -> putStrLn $ "Type: " ++ show typ'

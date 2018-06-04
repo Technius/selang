@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-|
 Examples:
@@ -44,6 +45,7 @@ module Selang.Ast
 import Data.List (intercalate)
 import Data.Functor.Foldable
 import Data.Functor.Classes
+import Data.Text.Prettyprint.Doc
 import Text.Show.Deriving
 
 -- | Constant values
@@ -56,6 +58,9 @@ instance Show Value where
   show (NumVal x) = show x
   show (BoolVal x) = show x
   show (StringVal x) = show x
+
+instance Pretty Value where
+  pretty v = pretty (show v)
 
 -- | Typeclass for converting arbitrary `a`s into AST nodes
 class ToAst a b where
@@ -108,6 +113,18 @@ instance (Show t) => Show (TermF t) where
   show (FnHost name) = "<host function " ++ name ++ ">"
 
 $(deriveShow1 ''TermF)
+
+instance Pretty t => Pretty (TermF t) where
+  pretty (Val v) = pretty v
+  pretty (Ident s) = pretty s
+  pretty (Cond cond t f) = group $
+    "if" <+> pretty cond <+> align(
+      "then" <> softline <> pretty t <> softline <> "else" <+> pretty f)
+  pretty (Lst l) = encloseSep "[" "]" ", " (pretty <$> l)
+  pretty (FnHost name) = "<host function" <+> pretty name <+> ">"
+
+instance Pretty Term where
+  pretty (Fix t) = pretty t
 
 -- | A sample AST in which each node is tagged with some message
 data Tagged f t = Tagged { tag :: String, content :: (f t) } deriving (Show, Functor)
