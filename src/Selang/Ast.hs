@@ -37,7 +37,7 @@ module Selang.Ast
   ( Value (..)
   , TermF (..)
   , Term
-  , Tagged(Tagged)
+  , Tagged(Tagged, tag, content)
   , untag
   , TTerm
   , Type (..)

@@ -8,10 +8,10 @@ import Data.Bifunctor (first)
 import Data.Text.Prettyprint.Doc (pretty)
 import qualified Data.Map as Map
 import System.Environment (getArgs)
-import Text.Megaparsec (runParser, ParseError)
+import Text.Megaparsec (runParser, ParseError, sourcePosPretty)
 import Text.Megaparsec.Error
 
-import Selang.Ast (Term, untag)
+import Selang.Ast (Term, TTerm, untag)
 import Selang.Parser
 import Selang.Eval
 import Selang.Typer
@@ -24,10 +24,12 @@ main = do
   result <- runProgram src defaultEnv
   case result of
     Left (ErrParse err) -> putStrLn $ parseErrorPretty' src err
-    Left (ErrEval err) -> putStrLn (show err)
+    Left (ErrEval err pos) ->
+      putStrLn ("Error at " ++ sourcePosPretty pos ++ ": " ++ show err)
     Right expr -> do
-      print (pretty expr)
-      let typ = getType (Map.empty) expr
+      let untagged = untag expr
+      print (pretty untagged)
+      let typ = getType Map.empty untagged
       case typ of
         Just typ' -> putStrLn $ "Type: " ++ show typ'
         Nothing -> pure ()
@@ -36,12 +38,12 @@ main = do
 type SeProgT a = ExceptT SeError (StateT Env IO) a
 
 -- | Runs the parse and evaluation pipeline on the given input
-runProgram :: String -> Env -> IO (Either SeError Term)
+runProgram :: String -> Env -> IO (Either SeError TTerm)
 runProgram src env = fst <$> (runStateT (runExceptT $ parseAndEval src) env)
 
 -- | Parses the given string and attempts to evaluate it
-parseAndEval :: String -> SeProgT Term
+parseAndEval :: String -> SeProgT TTerm
 parseAndEval s = do
   term <- liftEither $ first ErrParse (runParser parser "<console>" s)
-  result <- withExceptT ErrEval (eval (untag term))
+  result <- withExceptT (uncurry ErrEval) (eval term)
   pure result
