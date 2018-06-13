@@ -45,28 +45,35 @@ boolean :: ParserT m Value
 boolean = (const (toAst True) <$> symbol "true") <|>
           (const (toAst False) <$> symbol "false")
 
+tagPos :: TermF TTerm -> ParserT m TTerm
+tagPos t = (\p -> Fix (Tagged p t)) <$> getPosition
+
 -- | Parses a string, number, or boolean literal
-literal :: ParserT m Term
-literal = lexeme $ Fix . Val <$> (Selang.Parser.string <|> number <|> boolean <?> "literal")
+literal :: ParserT m TTerm
+literal = do
+  litAst <- Val <$> (Selang.Parser.string <|> number <|> boolean <?> "literal")
+  lexeme (tagPos litAst)
 
 -- | Parses a variable
-identifier :: ParserT m Term
+identifier :: ParserT m TTerm
 identifier = do
   h <- letter
   t <- many (letter <|> digit)
-  lexeme (pure (Fix (Ident (h:t))))
+  lexeme (tagPos (Ident (h:t)))
 
 -- | Parses a literal or a variable
-atom :: ParserT m Term
+atom :: ParserT m TTerm
 atom = literal <|> identifier <?> "atom"
 
 -- | Parses a list
-list :: ParserT m Term
-list = lexeme (inBrackets (Fix . Lst <$> term `sepBy` (symbol ",")))
+list :: ParserT m TTerm
+list = do
+  lst <- inBrackets (Lst <$> term `sepBy` (symbol ","))
+  lexeme (tagPos lst)
   where inBrackets = between (C.char '[') (C.char ']')
 
 -- | Parses an if-statement
-conditional :: ParserT m Term
+conditional :: ParserT m TTerm
 conditional = do
   symbol "if"
   cond <- term
@@ -74,10 +81,10 @@ conditional = do
   t <- term
   symbol "else"
   f <- term
-  pure (Fix (Cond cond t f))
+  tagPos (Cond cond t f)
 
-term :: ParserT m Term
+term :: ParserT m TTerm
 term = (try conditional) <|> atom <|> list <?> "term"
 
-parser :: ParserT m Term
+parser :: ParserT m TTerm
 parser = term

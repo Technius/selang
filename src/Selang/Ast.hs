@@ -37,6 +37,9 @@ module Selang.Ast
   ( Value (..)
   , TermF (..)
   , Term
+  , Tagged(Tagged)
+  , untag
+  , TTerm
   , Type (..)
   , FromAst (fromAst)
   , ToAst (toAst)
@@ -47,6 +50,7 @@ import Data.Functor.Foldable
 import Data.Functor.Classes
 import Data.Text.Prettyprint.Doc
 import Text.Show.Deriving
+import Text.Megaparsec.Pos (SourcePos)
 
 -- | Constant values
 data Value = NumVal Int
@@ -126,11 +130,15 @@ instance Pretty t => Pretty (TermF t) where
 instance Pretty Term where
   pretty (Fix t) = pretty t
 
--- | A sample AST in which each node is tagged with some message
-data Tagged f t = Tagged { tag :: String, content :: (f t) } deriving (Show, Functor)
-type TTerm = Fix (Tagged TermF)
+-- | An AST with a value at each node
+data Tagged r f t = Tagged { tag :: r, content :: (f t) } deriving (Show, Functor)
+-- | An AST tagged with source positions
+type TTerm = Fix (Tagged SourcePos TermF)
 
 $(deriveShow1 ''Tagged)
+
+untag :: TTerm -> Term
+untag = cata (Fix . content) -- Get contents (without tag) and wrap in Fix
 
 -- | Represents types of values in the language
 data Type = TyInt

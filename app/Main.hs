@@ -11,7 +11,7 @@ import System.Environment (getArgs)
 import Text.Megaparsec (runParser, ParseError)
 import Text.Megaparsec.Error
 
-import Selang.Ast (Term)
+import Selang.Ast (Term, untag)
 import Selang.Parser
 import Selang.Eval
 import Selang.Typer
@@ -43,5 +43,5 @@ runProgram src env = fst <$> (runStateT (runExceptT $ parseAndEval src) env)
 parseAndEval :: String -> SeProgT Term
 parseAndEval s = do
   term <- liftEither $ first ErrParse (runParser parser "<console>" s)
-  result <- withExceptT ErrEval (eval term)
+  result <- withExceptT ErrEval (eval (untag term))
   pure result
